@@ -1,10 +1,6 @@
 # TTS-norm-service
 TTS-norm-service is an api for converting text from written form into spoken form.
 
-## Processing flow
-
----
-___
 
 TTS norm service composes of 4 parts:
 
@@ -44,7 +40,7 @@ We use Regex to classify non-standard words and then generate full words for the
 
 ##Usage
 
-Run api: `python tts_norm_api.py`
+Run api: `python service.py`
 
 - Get the name of server and test with Postman application  
 - Using normal norm service, from text to text: Request to host:port/norm
