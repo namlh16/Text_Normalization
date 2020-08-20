@@ -9,27 +9,6 @@ import norm.read as read
 import norm.utils as utils
 
 
-def replace_multi_space(str):
-    return re.sub(' +', ' ', str)
-
-
-def replace_str(str, start_norm, end_norm, term, start_tag, end_tag):
-    left = str[:start_norm]
-    right = str[end_norm:]
-    out_str = left + ' ' + start_tag + term.strip() + end_tag + ' ' + right
-    return replace_multi_space(out_str)
-
-
-def tokenize(input_str):
-    """
-    Normalize punctuations: separate words and puctuations.
-    Note that @, %, etc   will be changed, i.e. 'abc@gmail.com' --> 'abc @ gmail.com'
-    """
-    tokens = word_tokenize(input_str)
-    input_str = " ".join(tokens)
-
-    return input_str
-
 
 def norm_punct(input_str, output_str):
     input_str = ' ' + input_str + ' '
@@ -40,35 +19,6 @@ def norm_punct(input_str, output_str):
         input_str = input_str.replace(' ' + e + ' ', ' <PUNCT>' + e + '</PUNCT> ')
         output_str = output_str.replace(' ' + e + ' ', ' <PUNCT>' + 'sil' + '</PUNCT> ')
     return input_str, output_str
-
-
-def norm_verbatim(e):
-    if e == '#':
-        e = e.replace(e, 'thăng')
-    elif e == '$':
-        e = e.replace(e, 'đô la')
-    elif e == '%':
-        e = e.replace(e, 'phần trăm')
-    elif e == '&':
-        e = e.replace(e, 'và')
-    elif e == '*':
-        e = e.replace(e, 'nhân')
-    elif e == '+':
-        e = e.replace(e, 'cộng')
-    elif e == '<':
-        e = e.replace(e, 'nhỏ hơn')
-    elif e == '=':
-        e = e.replace(e, 'bằng')
-    elif e == '>':
-        e = e.replace(e, 'lớn hơn')
-    elif e == '@':
-        e = e.replace(e, 'a còng')
-    elif e == '^':
-        e = e.replace(e, 'mũ')
-    elif e == '\\':
-        e = e.replace(e, 'trên')
-
-    return e
 
 
 def norm_tag_verbatim(input_str, output_str):
@@ -131,30 +81,6 @@ def normalize_letters(input_str, output_str):
     return input_str, output_str
 
 
-def normalize_AZ09(input_str, output_str):
-    """
-    Normalize sequences with forms [A-Z]{1}[0-9]{1,2} or [0-9]{1,2}[A-Z]{1},
-    i.e. 'chung cư A10', 'cục phòng chống tội phạm công nghệ cao C50'
-    """
-    input_str = ' ' + input_str + ' '
-    output_str = ' ' + output_str + ' '
-    type_1 = re.findall('\s[A-Za-z]\d{1,2}\s', input_str)
-    type_2 = re.findall('\s\d{1,2}[A-Za-z]\s', input_str)
-    if len(type_1) > 0:
-        for item in type_1:
-            AZ = item[:2]
-            num = item[2:]
-            input_str = input_str.replace(item, AZ + ' ' + num)
-            output_str = output_str.replace(item, AZ + ' ' + num)
-    if len(type_2) > 0:
-        for item in type_2:
-            AZ = item[-2:]
-            num = item[:-2]
-            input_str = input_str.replace(item, num + ' ' + AZ)
-            output_str = output_str.replace(item, num + ' ' + AZ)
-
-    return input_str, output_str
-
 
 def norm_measure(str, config_norm):
 
@@ -193,68 +119,6 @@ def norm_measure_generic(str, pattern, term, repl):
     return replace_multi_space(str)
 
 
-def norm_tag_measure(input_str, output_str):
-    """
-    Normalize unit names and number + unit names. i.e.
-    'kg' --> 'ki lô gam', '1000mAh' --> 'một nghìn mi li am pe'
-    """
-    # Normalize unit names (length, area, volume, information, speed, etc)
-    input_str = ' ' + input_str + ' '
-    output_str = ' ' + output_str + ' '
-
-    input_str, output_str = unit2words(input_str, output_str)
-
-    km_pattern = '\s[0-9]*\.*\,*\-*[0-9]+km\s'
-    m_pattern = '\s[0-9]*\.*\,*\-*[0-9]+\s*m\s'
-    cm_pattern = '\s[0-9]*\.*\,*\-*[0-9]+cm\s'
-    mm_pattern = '\s[0-9]*\.*\,*\-*[0-9]+mm\s'
-    nm_pattern = '\s[0-9]*\.*\,*\-*[0-9]+nm\s'
-    ha_pattern = '\s[0-9]*\.*\,*\-*[0-9]+ha\s'
-    l_pattern = '\s[0-9]*\.*\,*\-*[0-9]+\s*L\s'
-    kg_pattern = '\s[0-9]*\.*\,*\-*[0-9]+kg\s'
-    g_pattern = '\s[0-9]*\.*\,*\-*[0-9]+\s*g\s'
-    gr_pattern = '\s[0-9]*\.*\,*\-*[0-9]+gram\s'
-    mg_pattern = '\s[0-9]*\.*\,*\-*[0-9]+mg\s'
-    # h_pattern = '\s[0-9]*\.*\,*\-*[0-9]+h\s'
-    # s_pattern = '\s[0-9]*\.*\,*\-*[0-9]+s\s'
-
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, km_pattern, 'km ', ' ki lô mét ')
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, m_pattern, 'm ', ' mét ')
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, cm_pattern, 'cm ', ' xen ti mét ')
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, mm_pattern, 'mm ', ' mi li mét ')
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, nm_pattern, 'nm ', ' na nô mét ')
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, ha_pattern, 'ha ', ' héc ta ')
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, l_pattern, 'L ', ' lít ')
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, kg_pattern, 'kg ', ' ki lô gam ')
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, g_pattern, 'g ', ' gam ')
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, gr_pattern, 'gram ', ' gờ ram ')
-    input_str, output_str = norm_tag_measure_generic(input_str, output_str, mg_pattern, 'mg ', ' mi li gam ')
-    input_str, output_str = norm_soccer(input_str, output_str)
-
-    return input_str, output_str
-
-
-def norm_tag_measure_generic(input_str, output_str, pattern, term, norm_term):
-    matches = re.findall(pattern, input_str)
-    if len(matches) > 0:
-        for item in matches:
-            item_norm_out = item.replace(term, norm_term)
-            input_str = input_str.replace(item, ' <MEASURE>' + item.strip() + '</MEASURE> ')
-            output_str = output_str.replace(item, ' <MEASURE>' + item_norm_out + '</MEASURE> ')
-    return input_str, output_str
-
-
-def norm_soccer(input_str, output_str):
-    # Normalize units of VFF football team: U23, U19, etc
-    matches = re.findall('\sU[\-\.]*[0-9][0-9]\s', input_str)
-    if len(matches) > 0:
-        for item in matches:
-            item_norm = item.replace('.','').replace('-','').replace(' U', ' U ')
-            input_str = input_str.replace(item, '<MEASURE>' + item.strip() + '</MEASURE>')
-            output_str = output_str.replace(item, item_norm)
-
-    return input_str, output_str
-
 
 def normalize_date(input_str, output_str):
     """
@@ -266,15 +130,6 @@ def normalize_date(input_str, output_str):
     input_str, output_str = norm_date_type_4(input_str, output_str)
 
     return input_str, output_str
-
-
-def is_date_type_1(str):
-    str = ' ' + str + ' '
-    pattern = re.compile(
-        r'\s(0?[1-9]|[12]\d|3[01])[\/.](0?[1-9]|[1][0-2])[\/.](\d{2}|\d{4})\s|\s(0?[1-9]|[12]\d|3[01])[\-](0?[1-9]|[1][0-2])[\-](\d{2}|\d{4})\s')
-    if pattern.search(str):
-        return True
-    return False
 
 
 def norm_date_type_1(input_str, output_str):
@@ -298,14 +153,6 @@ def norm_date_type_1(input_str, output_str):
             output_str = output_str.replace(date, ' <DATE>' + 'ngày ' + date_str + '</DATE> ')
 
     return input_str, output_str
-
-
-def is_date_type_2(str):
-    str = ' ' + str + ' '
-    pattern = re.compile(r'\s(0?[1-9]|[12]\d|3[01])[\/\-.](0?[1-9]|[1][0-2])\s')
-    if pattern.search(str):
-        return True
-    return False
 
 
 def norm_date_type_2(input_str, output_str):
@@ -336,11 +183,6 @@ def norm_date_type_2(input_str, output_str):
 
     return input_str, output_str
 
-
-# def is_date_type_3(str):
-#     date_dmy_pattern = re.compile(r'\s(0?[1-9]|[12]\d|3[01])[\/\-.](0?[1-9]|[1][0-2])\s')
-#     if date_dmy_pattern.search(str):
-#         return True
 
 
 def norm_date_type_3(input_str, output_str):
@@ -373,13 +215,6 @@ def norm_date_type_3(input_str, output_str):
 
     return input_str, output_str
 
-
-def is_date_type_4(str):
-    str = ' ' + str + ' '
-    pattern = re.compile(r'\s(0?[1-9]|[1][0-2])[\/\-.](\d{4})\s')
-    if pattern.search(str):
-        return True
-    return False
 
 
 def norm_date_type_4(input_str, output_str):
@@ -416,14 +251,6 @@ def normalize_date_range(input_str, output_str):
 
     return input_str, output_str
 
-
-def is_date_range_type_1(str):
-    str = ' ' + str + ' '
-    pattern = re.compile(
-        r'\s(\d{4})\s*\-\s*(\d{4})\s')
-    if pattern.search(str):
-        return True
-    return False
 
 
 def norm_date_range_type_1(input_str, output_str):
@@ -462,14 +289,6 @@ def norm_date_range_type_1(input_str, output_str):
 
 # Normalize mm/yyyy-mm/yyyy forms
 
-def is_date_range_type_2(str):
-    str = ' ' + str + ' '
-    pattern = re.compile(
-        r'\s(0?[1-9]|[12]\d|3[01])[\/.](0?[1-9]|[1][0-2])[\/.](\d{4})\s*\-\s*(0?[1-9]|[12]\d|3[01])[\/.](0?[1-9]|[1][0-2])[\/.](\d{4})\s')
-    if pattern.search(str):
-        return True
-    return False
-
 
 def norm_date_range_type_2(input_str, output_str):
     input_str = ' ' + input_str + ' '
@@ -493,15 +312,6 @@ def norm_date_range_type_2(input_str, output_str):
             output_str = output_str.replace(date_range_dmy, ' <DATE>' + date_range_dmy_str + '</DATE> ')
 
     return input_str, output_str
-
-
-def is_date_range_type_3(str):
-    str = ' ' + str + ' '
-    pattern = re.compile(
-        r'\s(0?[1-9]|[12]\d|3[01])\s*\-\s*(0?[1-9]|[12]\d|3[01])[\/.](0?[1-9]|[1][0-2])[\/.](\d{4})\s')
-    if pattern.search(str):
-        return True
-    return False
 
 
 def norm_date_range_type_3(input_str, output_str):
@@ -528,15 +338,6 @@ def norm_date_range_type_3(input_str, output_str):
     return input_str, output_str
 
 
-def is_date_range_type_4(str):
-    str = ' ' + str + ' '
-    pattern = re.compile(
-        r'\s(0?[1-9]|[12]\d|3[01])[\/.](0?[1-9]|[1][0-2])\s*\-\s*(0?[1-9]|[12]\d|3[01])[\/.](0?[1-9]|[1][0-2])[\/.](\d{4})\s')
-    if pattern.search(str):
-        return True
-    return False
-
-
 def norm_date_range_type_4(input_str, output_str):
     input_str = ' ' + input_str + ' '
     output_str = ' ' + output_str + ' '
@@ -560,14 +361,6 @@ def norm_date_range_type_4(input_str, output_str):
 
     return input_str, output_str
 
-
-def is_date_range_type_5(str):
-    str = ' ' + str + ' '
-    pattern = re.compile(
-        r'\s(0?[1-9]|[12]\d|3[01])[\/.](0?[1-9]|[1][0-2])\s*\-\s*(0?[1-9]|[12]\d|3[01])[\/.](0?[1-9]|[1][0-2])\s')
-    if pattern.search(str):
-        return True
-    return False
 
 
 def norm_date_range_type_5(input_str, output_str):
@@ -594,14 +387,6 @@ def norm_date_range_type_5(input_str, output_str):
     return input_str, output_str
 
 
-def is_date_range_type_6(str):
-    str = ' ' + str + ' '
-    pattern = re.compile(
-        r'\s(0?[1-9]|[12]\d|3[01])\s*\-\s*(0?[1-9]|[12]\d|3[01])[\/.](0?[1-9]|[1][0-2])\s')
-    if pattern.search(str):
-        return True
-    return False
-
 
 def norm_date_range_type_6(input_str, output_str):
     input_str = ' ' + input_str + ' '
@@ -626,16 +411,6 @@ def norm_date_range_type_6(input_str, output_str):
 
     return input_str, output_str
 
-
-def is_date_range(str):
-    return is_date_range_type_1(str) or is_date_range_type_2(str) or is_date_range_type_3(str) \
-           or is_date_range_type_4(str) or is_date_range_type_5(str) or is_date_range_type_6(str)
-
-
-def norm_roman(roman_term):
-    roman2int = fromRoman(roman_term)
-    roman_numeral_str = num2words_fixed(roman2int)
-    return roman_numeral_str
 
 
 def norm_tag_roman_num(input_str, output_str):
@@ -794,22 +569,6 @@ def norm_digit(input_str, output_str):
             output_str = output_str.replace(digit, ' <DIGIT>' + digits_str + '</DIGIT> ')
 
     return input_str, output_str
-
-# def norm_digit(input_str, output_str):
-#     """
-#         Normalize CMT, STK
-#         """
-#     input_str = ' ' + input_str + ' '
-#     output_str = ' ' + output_str + ' '
-#     phone_numbers = re.findall(r"[\d]{9,20}", input_str)
-#     if len(phone_numbers) > 0:
-#         for digit in phone_numbers:
-#             digits_str = phone2words(digit)
-#             # print('phone_number:', phone_number, '-', phone_number_str)
-#             input_str = input_str.replace(digit, ' <DIGIT>' + digit + '</DIGIT> ')
-#             output_str = output_str.replace(digit, ' <DIGIT>' + digits_str + '</DIGIT> ')
-
-#     return input_str, output_str
 
 def normalize_negative_number(input_str, output_str):
     input_str = ' ' + input_str + ' '
@@ -1009,17 +768,6 @@ def normalize_sport_score(input_str, output_str):
     return input_str, output_str
 
 
-def norm_fraction(fraction):
-    first_num = fraction.split('/')[0]
-    second_num = fraction.split('/')[1]
-    if int(second_num) > 10:
-        fraction_str = num2words_fixed(first_num) + ' trên ' + num2words_fixed(second_num)
-    else:
-        fraction_str = num2words_fixed(first_num) + ' phần ' + num2words_fixed(second_num)
-
-    return fraction_str
-
-
 def norm_tag_fraction(input_str, output_str):
     """
     Normalize number range.
@@ -1053,132 +801,6 @@ def norm_tag_fraction(input_str, output_str):
     return input_str, output_str
 
 
-def normalize_email(input_str, output_str):
-    """
-    Normalize email addresses.
-    """
-    input_str = ' ' + input_str + ' '
-    output_str = ' ' + output_str + ' '
-    emails = re.findall('[a-zA-Z0-9]\S*@\S*[a-zA-Z0-9]', input_str)
-    if len(emails) > 0:
-        print(emails)
-
-    return input_str, output_str
-
-
-def normalize_url(input_str, output_str):
-    """
-    Normalize urls.
-    """
-    input_str = ' ' + input_str + ' '
-    output_str = ' ' + output_str + ' '
-    urls = re.findall(r"[a-zA-Z0-9]\S*\.com\S*|[a-zA-Z0-9]\S*\.net\S*|[a-zA-Z0-9]\S*\.org\S*|[a-zA-Z0-9]\S*\.vn\S*|[a-zA-Z0-9]\S*\.edu\S*|[a-zA-Z0-9]\S*\.gov\S*", input_str)
-    urls = [item for item in urls if item.find('@')==-1]
-    # Should add more top-level domain names: .uk, .io, .jp, etc if necessary
-
-    return input_str, output_str
-
-
-def norm_vnmese_accent(str):
-    words = str.split(' ')
-    for i in range(len(words)):
-        if len(words[i]) <= 3:
-            if not words[i].startswith('qu'):
-                words[i] = words[i].replace("uỳ", "ùy")
-                words[i] = words[i].replace("uý", "úy")
-                words[i] = words[i].replace("uỷ", "ủy")
-                words[i] = words[i].replace("uỹ", "ũy")
-                words[i] = words[i].replace("uỵ", "ụy")
-            else:
-                words[i] = words[i].replace("ùy", "uỳ")
-                words[i] = words[i].replace("úy", "uý")
-                words[i] = words[i].replace("ủy", "uỷ")
-                words[i] = words[i].replace("ũy", "uỹ")
-                words[i] = words[i].replace("ụy", "uỵ")
-
-            words[i] = words[i].replace("oà", "òa")
-            words[i] = words[i].replace("oá", "óa")
-            words[i] = words[i].replace("oả", "ỏa")
-            words[i] = words[i].replace("oã", "õa")
-            words[i] = words[i].replace("oạ", "ọa")
-            words[i] = words[i].replace("oè", "òe")
-            words[i] = words[i].replace("oé", "óe")
-            words[i] = words[i].replace("oẻ", "ỏe")
-            words[i] = words[i].replace("oẽ", "õe")
-            words[i] = words[i].replace("oẹ", "ọe")
-        else:
-            words[i] = words[i].replace("òa", "oà")
-            words[i] = words[i].replace("óa", "oá")
-            words[i] = words[i].replace("ỏa", "oả")
-            words[i] = words[i].replace("õa", "oã")
-            words[i] = words[i].replace("ọa", "oạ")
-            words[i] = words[i].replace("òe", "oè")
-            words[i] = words[i].replace("óe", "oé")
-            words[i] = words[i].replace("ỏe", "oẻ")
-            words[i] = words[i].replace("õe", "oẽ")
-            words[i] = words[i].replace("ọe", "oẹ")
-
-    return ' '.join(words)
-
-
-def read_foreign_words(f_foreign):
-    df = pd.read_csv(f_foreign)
-    words_foreign = df.word.values.tolist()
-    trans_foreign = df.transcription.values.tolist()
-
-    trans_dict = dict(zip(words_foreign, trans_foreign))
-
-    return trans_dict
-
-
-def read_abbre(f_abbre):
-    fo = open(f_abbre, 'r')
-    abbre_dict = dict()
-    for line in fo:
-        words = line.split('\t')
-        abbre_dict[words[0]] = words[1].strip()
-
-    return abbre_dict
-
-
-# read_abbre('../resources/abbre_correct.txt')
-
-
-def norm_foreign_words(input_str, output_str, trans_dict):
-
-    words_inp = input_str.split()
-    words_out = output_str.split()
-
-    for i in range(len(words_inp)):
-        if words_inp[i] in trans_dict.keys():
-            words_out[i] = '<FOREIGN>' + str(trans_dict[words_inp[i]]).replace('_',' ').strip() + '</FOREIGN>'
-            words_inp[i] = '<FOREIGN>' + words_inp[i] + '</FOREIGN>'
-
-    input_str = ' '.join(words_inp)
-    output_str = ' '.join(words_out)
-
-    return input_str, output_str
-
-
-def norm_abbre(input_str, output_str, abbre_dict):
-
-    words_inp = input_str.split()
-    words_out = output_str.split()
-
-    for i in range(len(words_inp)):
-        if words_inp[i] in abbre_dict.keys():
-            words_out[i] = '<ABBRE>' + str(abbre_dict[words_inp[i]].replace(' ', '_')).strip() + '</ABBRE>'
-            words_inp[i] = '<ABBRE>' + words_inp[i] + '</ABBRE>'
-
-    input_str = ' '.join(words_inp)
-    output_str = ' '.join(words_out)
-
-    return input_str, output_str
-
-
-def norm_abbre_by_ngram():
-    return False
-
 
 def norm_code_type_1(input_str, output_str):
     # pattern = '(?=(\s[a-zA-Z]+[0-9]+\s|\s[0-9]+[a-zA-Z]+\s|\s[a-zA-Z]+[0-9]+[a-zA-Z]+\s))'
@@ -1201,118 +823,3 @@ def norm_code_type_1(input_str, output_str):
 # print(norm_code_type_1('', '20BDC'))
 # print(norm_code_type_1('', 'BDC20BDC'))
 # print(norm_code_type_1('', 'BCD20 CD30 B25D'))
-
-
-def run(input_file, output_file, foreign_file, abbre_file):
-
-    f_inp = open(input_file, 'r')
-    fout_norm = open(output_file, "w")
-    fout_norm_failure = open(input_file + '.fail', "w")
-
-    writer_csv = csv.writer(fout_norm, delimiter='\t')
-    writer_csv.writerow(['origin', 'written', 'spoken'])
-
-    trans_dict = read_foreign_words(foreign_file)
-    abbre_dict = read_abbre(abbre_file)
-
-    count = 0
-
-    for line in f_inp:
-        count += 1
-        print('\r count = %d' %count, end='\r')
-        line = line.strip()
-        input_line = line
-        #    line = normalize_email(line)
-        line = tokenize(line)
-        line_inp, line_out = norm_abbre(line, line, abbre_dict)
-        line_inp, line_out = norm_tag_verbatim(line_inp, line_out)
-        line_inp, line_out = norm_punct(line_inp, line_out)
-        line_inp, line_out = norm_foreign_words(line_inp, line_out, trans_dict=trans_dict)
-        line_inp = line_inp.replace('_', ' ')
-        line_out = line_out.replace('_', ' ')
-        line_inp, line_out = normalize_AZ09(line_inp, line_out)
-        line_inp, line_out = norm_tag_measure(line_inp, line_out)
-        line_inp, line_out = norm_tag_fraction(line_inp, line_out)
-        line_inp, line_out = normalize_date_range(line_inp, line_out)
-        line_inp, line_out = normalize_date(line_inp, line_out)
-        line_inp, line_out = normalize_time(line_inp, line_out)
-        line_inp, line_out = normalize_phone_number(line_inp, line_out)
-        line_inp, line_out = norm_digit(line_inp, line_out)
-        line_inp, line_out = norm_tag_roman_num(line_inp, line_out)
-        line_inp, line_out = normalize_number_range(line_inp, line_out)
-        line_inp, line_out = normalize_sport_score(line_inp, line_out)
-        line_inp, line_out = normalize_number(line_inp, line_out)
-        line_inp, line_out = normalize_letters(line_inp, line_out)
-        try:
-            line_inp = norm_vnmese_accent(line_inp)
-            line_out = norm_vnmese_accent(line_out)
-        except:
-            pass
-        #    line = normalize_url(line)
-        num = re.findall(r'\s\S*[0-9]+\S*\s', line_out)
-        # if len(num) == 0:
-            # fout_norm.write(input_line + '\t' + line + '\n')
-        input_line = re.sub(' +',' ', input_line)
-        line_inp = re.sub(' +',' ', line_inp)
-        line_out = re.sub(' +',' ', line_out)
-        writer_csv.writerow([input_line, line_inp, line_out])
-        # else:
-        #     fout_norm_failure.write(input_line + '\t' + line_inp + '\t' + line_out + '\n')
-
-    fout_norm.close()
-    fout_norm_failure.close()
-    f_inp.close()
-
-
-# print(norm_tag_fraction('tỷ lệ 2 / 3 và tỷ lệ 3 / 4', 'tỷ lệ 2 / 3 và tỷ lệ 3 / 4 '))
-
-
-# if __name__ == '__main__':
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--input", type=str)
-#     parser.add_argument("--output", type=str)
-#     args = parser.parse_args()
-#
-#     input_file = "{}".format(args.input)
-#     output_file = "{}".format(args.output)
-#
-#     fhand = open(input_file)
-#     fout_norm = open(output_file, "w")
-#     fout_norm_failure = open("./norm_failure_cases.txt", "w")
-#
-#     for line in fhand:
-#         line = line.strip()
-#         input_line = line
-#     #    line = normalize_email(line)
-#         line = normalize_punct(line)
-#         line = normalize_unit(line)
-#         line = normalize_AZ09(line)
-#         line = normalize_date_range(line)
-#         line = normalize_date(line)
-#         line = normalize_time(line)
-#         line = normalize_phone_number(line)
-#         line = normalize_roman_num(line)
-#         line = normalize_number_range(line)
-#         line = normalize_number(line)
-#         line = normalize_sport_score(line)
-#         line = normalize_number(line)
-#         line = normalize_ratio(line)
-#         line = norm_punct(line)
-#         try:
-#             line_ = line.split()
-#             line_ = [VietnameseTextNormalizer.Normalize(word) for word in line_]
-#             line_ = " ".join(line_)
-#             line = line_
-#         except:
-#             pass
-#     #    line = normalize_url(line)
-#         num = re.findall(r'\s\S*[0-9]+\S*\s', line)
-#         if len(num) == 0:
-#             fout_norm.write(input_line + '\t' + line + '\n')
-#         else:
-#             fout_norm_failure.write(input_line + '\t' + line + '\n')
-#
-#     fout_norm.close()
-#     fout_norm_failure.close()
-#     fhand.close()
-

@@ -231,15 +231,6 @@ def split_sentence(sentence):
 
     return list_sent
 
-@app.route('/norm', methods=['GET', 'POST'])
-def infer():
-    message = request.json
-    sample = message['sample']
-    result = normalize(sample)
-    print('INPUT: ', sample)
-    print('RESULT: ', result)
-
-    return send_response({'result':result})
 
 if __name__ == '__main__':
     config = configparser.ConfigParser()
@@ -251,9 +242,19 @@ if __name__ == '__main__':
         oov_dict = utils.read_oov(config['resources']['oov_path'])
     except:
         oov_dict = {}
-    # init api
-    app.debug = True
-    host = os.environ.get('IP', '0.0.0.0')
-    port = int(os.environ.get('PORT', 11993))
-    app.run(host=host, port=port, threaded=True, use_reloader=False)
-    app.run()
+    
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+    fhand = open(input_file)
+    fout = open(output_file, "w")
+
+    for line in fhand:
+        line = line.strip()
+        # print('input: {}'.format(line))
+        result=normalize(line)
+        # print('result: {}'.format(result))
+        fout.write(result)
+        fout.write("\n")
+    
+    fhand.close()
+    fout.close()
